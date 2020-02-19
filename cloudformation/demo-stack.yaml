@@ -29,12 +29,12 @@ Resources:
 Outputs:
   RootCAPublicKey:
     Description: public key of the root CA
-    Value: !GetAtt 'RootCA.PublicKeyPEM'
+    Value: !GetAtt 'RootCA.PublicCertPEM'
 
   Server01PublicKey:
     Description: public key of server01
-    Value: !GetAtt 'Server01Certificate.PublicKeyPEM'
+    Value: !GetAtt 'Server01Certificate.PublicCertPEM'
 
   Server02PublicKey:
     Description: public key of server02
-    Value: !GetAtt 'Server02Certificate.PublicKeyPEM'
+    Value: !GetAtt 'Server02Certificate.PublicCertPEM'
