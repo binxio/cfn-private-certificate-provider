@@ -90,6 +90,38 @@ def test_rename():
         except ssm.exceptions.ParameterNotFound:
             pass
 
+def test_refresh_on_update():
+    # create
+    ca_name = "ca-%s" % uuid.uuid4()
+    request = RootCertificateRequest("Create", ca_name)
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    hash = response["Data"]["Hash"]
+    physical_resource_id = response.get("PhysicalResourceId")
+
+    request = RootCertificateRequest(
+        "Update", ca_name, physical_resource_id=physical_resource_id
+    )
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    assert response.get("PhysicalResourceId") == physical_resource_id
+    assert "PublicKeyPEM" in response["Data"]
+    assert response["Data"]["Hash"] == hash
+
+    request["ResourceProperties"]["RefreshOnUpdate"] = True
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    assert response.get("PhysicalResourceId") == physical_resource_id
+    assert "PublicKeyPEM" in response["Data"]
+    assert response["Data"]["Hash"] != hash
+
+
+    request = RootCertificateRequest(
+        "Delete", ca_name, physical_resource_id=physical_resource_id
+    )
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+
 class RootCertificateRequest(dict):
     def __init__(self, request_type, ca_name, physical_resource_id=None):
         request_id = "request-%s" % uuid.uuid4()

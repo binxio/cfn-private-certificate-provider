@@ -14,7 +14,12 @@ request_schema = {
             "type": "string",
             "description": "the name of the root CA",
             "pattern": "^[a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]$",
-        }
+        },
+        "RefreshOnUpdate": {
+            "type": "boolean",
+            "description": "refresh root ca on update",
+            "default": False,
+        },
     },
 }
 
@@ -41,16 +46,19 @@ class PrivateRootCertificateProvider(ResourceProvider):
 
     @property
     def public_key_parameter_name(self):
-        return f'/certauth/{self.ca_name}/public-keys/root_ca'
+        return f"/certauth/{self.ca_name}/public-keys/root_ca"
 
-    def create_or_update(self, allow_overwrite=False):
-        cache = CertificateCache(ssm=ssm, ca_name=self.ca_name)
-        if not allow_overwrite and cache.get("!!root_ca"):
-            self.fail(f"root certificate for ca '{self.ca_name}' already exists.")
-            return
+    @property
+    def cache(self):
+        return CertificateCache(ssm=ssm, ca_name=self.ca_name)
 
+    @property
+    def refresh_on_update(self):
+        return self.get("RefreshOnUpdate")
+
+    def create_or_update(self, overwrite=False):
         ca = CertificateAuthority(
-            self.ca_name, ca_file_cache=cache, cert_cache=cache, overwrite=False
+            self.ca_name, ca_file_cache=self.cache, cert_cache=self.cache, overwrite=overwrite
         )
 
         public_key_pem = crypto.dump_publickey(FILETYPE_PEM, ca.ca_cert.get_pubkey())
@@ -65,13 +73,17 @@ class PrivateRootCertificateProvider(ResourceProvider):
             Type="String",
         )
 
-        self.physical_resource_id = cache.parameter_name('!!root_ca')
+        self.physical_resource_id = self.cache.parameter_name("!!root_ca")
 
     def create(self):
-        self.create_or_update(allow_overwrite=False)
+        self.create_or_update(overwrite=False)
 
     def update(self):
-        self.create_or_update(allow_overwrite=(self.old_ca_name == self.ca_name))
+        if self.old_ca_name != self.ca_name and self.cache.get("!!root_ca"):
+            self.fail(f"root certificate for ca '{self.ca_name}' already exists.")
+            return
+
+        self.create_or_update(overwrite=self.refresh_on_update)
 
     def delete(self):
         cache = CertificateCache(ssm=ssm, ca_name=self.ca_name)

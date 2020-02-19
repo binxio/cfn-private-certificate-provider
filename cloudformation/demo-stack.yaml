@@ -5,6 +5,7 @@ Resources:
     Type: Custom::PrivateRootCertificate
     Properties:
       CAName: my-private-ca
+      RefreshOnUpdate: true
       ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-private-certificate-provider'
 
   Server01Certificate:
@@ -12,6 +13,8 @@ Resources:
     Properties:
       CAName: !GetAtt RootCA.CAName
       Hostname: 'server01.local'
+      RefreshOnUpdate: true
+      Version: !GetAtt RootCA.Hash
       ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-private-certificate-provider'
 
   Server02Certificate:
@@ -19,7 +22,10 @@ Resources:
     Properties:
       CAName: !GetAtt RootCA.CAName
       Hostname: 'server02.local'
+      RefreshOnUpdate: true
+      Version: !GetAtt RootCA.Hash
       ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-private-certificate-provider'
+
 Outputs:
   RootCAPublicKey:
     Description: public key of the root CA

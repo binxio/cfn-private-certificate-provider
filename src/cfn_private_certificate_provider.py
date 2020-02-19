@@ -25,6 +25,11 @@ request_schema = {
             "type": "boolean",
             "default": False,
         },
+        "RefreshOnUpdate": {
+            "type": "boolean",
+            "description": "refresh certificate on update",
+            "default": False,
+        },
     },
 }
 
@@ -62,31 +67,33 @@ class PrivateCertificateProvider(ResourceProvider):
         return self.get("Wildcard")
 
     @property
+    def refresh_on_update(self):
+        return self.get("RefreshOnUpdate")
+
+    @property
     def old_ca_name(self):
         return self.get_old("CAName", self.ca_name)
 
     @property
     def old_hostname(self):
-        return self.get_old("Hostname", self.ca_name)
+        return self.get_old("Hostname", self.hostname)
 
-    def create_or_update(self, allow_overwrite=False):
-        cache = CertificateCache(ssm=ssm, ca_name=self.ca_name)
-        if not cache.get("!!root_ca"):
+    @property
+    def cache(self):
+        return  CertificateCache(ssm=ssm, ca_name=self.ca_name)
+
+    def create_or_update(self, refresh=False):
+        if not self.cache.get("!!root_ca"):
             self.fail(f"certificate for root ca '{self.ca_name}' does not exist.")
             return
 
         ca = CertificateAuthority(
-            self.ca_name, ca_file_cache=cache, cert_cache=cache, overwrite=False
+            self.ca_name, ca_file_cache=self.cache, cert_cache=self.cache, overwrite=False
         )
-        if not allow_overwrite and cache.get(self.hostname):
-            self.fail(
-                f"certificate for host '{self.hostname}' in ca '{self.ca_name}' already exists."
-            )
-            return
 
         cert, pkey, entry = ca.load_cert(
             self.hostname,
-            overwrite=False,
+            overwrite=refresh,
             wildcard=self.wildcard,
             wildcard_use_parent=False,
             include_cache_key=True,
@@ -97,17 +104,19 @@ class PrivateCertificateProvider(ResourceProvider):
         self.set_attribute("Hostname", self.hostname)
         self.set_attribute("Hash", hashlib.md5(public_key_pem).hexdigest())
         self.set_attribute("PublicKeyPEM", public_key_pem.decode("ascii"))
-        self.physical_resource_id = cache.parameter_name(self.hostname)
+        self.physical_resource_id = self.cache.parameter_name(self.hostname)
 
     def create(self):
-        self.create_or_update(allow_overwrite=False)
+        self.create_or_update(refresh=False)
 
     def update(self):
-        self.create_or_update(
-            allow_overwrite=(
-                self.ca_name == self.old_ca_name and self.hostname == self.old_hostname
+        if (self.ca_name != self.old_ca_name or self.hostname != self.old_hostname) and self.cache.get(self.hostname):
+            self.fail(
+                f"certificate for host '{self.hostname}' in ca '{self.ca_name}' already exists."
             )
-        )
+            return
+
+        self.create_or_update(refresh=self.refresh_on_update)
 
     def delete(self):
         cache = CertificateCache(ssm=ssm, ca_name=self.ca_name)

@@ -73,6 +73,50 @@ def test_create():
         handler(CertificateRequest("Delete", ca_name, new_hostname), {})
         handler(RootCertificateRequest("Delete", ca_name), {})
 
+def test_refresh_on_update():
+    # create
+    ca_name = "ca-%s" % uuid.uuid4()
+    hostname = "server.ca-%s" % uuid.uuid4()
+    request = RootCertificateRequest("Create", ca_name)
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    hash = response["Data"]["Hash"]
+    ca_physical_resource_id = response.get("PhysicalResourceId")
+
+
+    request = CertificateRequest("Create", ca_name, hostname)
+    response = handler(request, {})
+    assert response["Data"]["CAName"] == ca_name
+    assert response["Data"]["Hostname"] == hostname
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    physical_resource_id = response.get("PhysicalResourceId")
+    hash = response["Data"]["Hash"]
+
+    request = CertificateRequest("Update", ca_name, hostname, physical_resource_id=physical_resource_id)
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    assert response.get("PhysicalResourceId") == physical_resource_id
+    assert "PublicKeyPEM" in response["Data"]
+    assert response["Data"]["Hash"] == hash
+
+    request["ResourceProperties"]["RefreshOnUpdate"] = True
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+    assert response.get("PhysicalResourceId") == physical_resource_id
+    assert "PublicKeyPEM" in response["Data"]
+    assert response["Data"]["Hash"] != hash
+
+
+    request["RequestType"] = "Delete"
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+
+    request = RootCertificateRequest(
+        "Delete", ca_name, physical_resource_id=ca_physical_resource_id
+    )
+    response = handler(request, {})
+    assert response["Status"] == "SUCCESS", response["Reason"]
+
 
 class CertificateRequest(dict):
     def __init__(self, request_type, ca_name, hostname, physical_resource_id=None):
