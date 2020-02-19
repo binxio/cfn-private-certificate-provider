@@ -36,6 +36,10 @@ class PrivateRootCertificateProvider(ResourceProvider):
         return self.get("CAName")
 
     @property
+    def old_ca_name(self):
+        return self.get_old("CAName", self.ca_name)
+
+    @property
     def public_key_parameter_name(self):
         return f'/certauth/{self.ca_name}/public-keys/root_ca'
 
@@ -50,6 +54,7 @@ class PrivateRootCertificateProvider(ResourceProvider):
         )
 
         public_key_pem = crypto.dump_publickey(FILETYPE_PEM, ca.ca_cert.get_pubkey())
+        self.set_attribute("Name", self.ca_name)
         self.set_attribute("Hash", hashlib.md5(public_key_pem).hexdigest())
         self.set_attribute("PublicKeyPEM", public_key_pem.decode("ascii"))
 
