@@ -54,7 +54,7 @@ class PrivateRootCertificateProvider(ResourceProvider):
         )
 
         public_key_pem = crypto.dump_publickey(FILETYPE_PEM, ca.ca_cert.get_pubkey())
-        self.set_attribute("Name", self.ca_name)
+        self.set_attribute("CAName", self.ca_name)
         self.set_attribute("Hash", hashlib.md5(public_key_pem).hexdigest())
         self.set_attribute("PublicKeyPEM", public_key_pem.decode("ascii"))
 

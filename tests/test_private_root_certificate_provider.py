@@ -17,7 +17,7 @@ def test_crud():
         assert "PhysicalResourceId" in response
         assert "PublicKeyPEM" in response["Data"]
         assert "Hash" in response["Data"]
-        assert response["Data"]["Name"]  == ca_name
+        assert response["Data"]["CAName"]  == ca_name
         hash = response["Data"]["Hash"]
         physical_resource_id = response.get("PhysicalResourceId")
         r = ssm.get_parameter(Name=response["PhysicalResourceId"], WithDecryption=True)
@@ -71,7 +71,7 @@ def test_rename():
     assert response.get("PhysicalResourceId") != physical_resource_id
     assert "PublicKeyPEM" in response["Data"]
     assert response["Data"]["Hash"] != hash
-    assert response["Data"]["Name"] == new_ca_name
+    assert response["Data"]["CAName"] == new_ca_name
     new_physical_resource_id  = response["PhysicalResourceId"]
     r = ssm.get_parameter(Name=new_physical_resource_id, WithDecryption=True)
     failed_update_response = handler(request, {})

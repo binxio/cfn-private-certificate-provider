@@ -1,12 +1,34 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Custom Provider CloudFormation
+Description: Custom Private Root Certificate Provider
 Resources:
-  Custom:
-    Type: Custom::Custom
+  RootCA:
+    Type: Custom::PrivateRootCertificate
     Properties:
-      Value: bye bye World!
+      CAName: my-private-ca
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-private-certificate-provider'
+
+  Server01Certificate:
+    Type: Custom::PrivateCertificate
+    Properties:
+      CAName: !GetAtt RootCA.CAName
+      Hostname: 'server01.local'
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-private-certificate-provider'
+
+  Server02Certificate:
+    Type: Custom::PrivateCertificate
+    Properties:
+      CAName: !GetAtt RootCA.CAName
+      Hostname: 'server02.local'
       ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:cfn-private-certificate-provider'
 Outputs:
-  Value:
-    Description: The value returned by the Custom::Custom resource
-    Value: !GetAtt 'Custom.Value'
+  RootCAPublicKey:
+    Description: public key of the root CA
+    Value: !GetAtt 'RootCA.PublicKeyPEM'
+
+  Server01PublicKey:
+    Description: public key of server01
+    Value: !GetAtt 'Server01Certificate.PublicKeyPEM'
+
+  Server02PublicKey:
+    Description: public key of server02
+    Value: !GetAtt 'Server02Certificate.PublicKeyPEM'
