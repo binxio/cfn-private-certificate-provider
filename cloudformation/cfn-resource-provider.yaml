@@ -6,7 +6,7 @@ Parameters:
     Default: ''
   CFNCustomProviderZipFileName:
     Type: String
-    Default: lambdas/cfn-private-certificate-provider-latest.zip
+    Default: lambdas/cfn-private-certificate-provider-0.2.0.zip
 Resources:
   LambdaRole:
     Type: AWS::IAM::Role
