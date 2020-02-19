@@ -45,8 +45,8 @@ class PrivateRootCertificateProvider(ResourceProvider):
         return self.get_old("CAName", self.ca_name)
 
     @property
-    def public_key_parameter_name(self):
-        return f"/certauth/{self.ca_name}/public-keys/root_ca"
+    def public_cert_parameter_name(self):
+        return f"/certauth/{self.ca_name}/public/root_ca"
 
     @property
     def cache(self):
@@ -58,17 +58,20 @@ class PrivateRootCertificateProvider(ResourceProvider):
 
     def create_or_update(self, overwrite=False):
         ca = CertificateAuthority(
-            self.ca_name, ca_file_cache=self.cache, cert_cache=self.cache, overwrite=overwrite
+            self.ca_name,
+            ca_file_cache=self.cache,
+            cert_cache=self.cache,
+            overwrite=overwrite,
         )
 
-        public_key_pem = crypto.dump_publickey(FILETYPE_PEM, ca.ca_cert.get_pubkey())
+        public_cert_pem = crypto.dump_certificate(FILETYPE_PEM, ca.ca_cert)
         self.set_attribute("CAName", self.ca_name)
-        self.set_attribute("Hash", hashlib.md5(public_key_pem).hexdigest())
-        self.set_attribute("PublicKeyPEM", public_key_pem.decode("ascii"))
+        self.set_attribute("Hash", hashlib.md5(public_cert_pem).hexdigest())
+        self.set_attribute("PublicCertPEM", public_cert_pem.decode("ascii"))
 
         _ = ssm.put_parameter(
-            Name=self.public_key_parameter_name,
-            Value=self.get_attribute("PublicKeyPEM"),
+            Name=self.public_cert_parameter_name,
+            Value=self.get_attribute("PublicCertPEM"),
             Overwrite=True,
             Type="String",
         )
@@ -90,7 +93,7 @@ class PrivateRootCertificateProvider(ResourceProvider):
         cache.delete("!!root_ca")
 
         try:
-            _ = ssm.delete_parameter(Name=self.public_key_parameter_name)
+            _ = ssm.delete_parameter(Name=self.public_cert_parameter_name)
         except ssm.exceptions.ParameterNotFound:
             pass
 
@@ -100,3 +103,18 @@ provider = PrivateRootCertificateProvider()
 
 def handler(request, context):
     return provider.handle(request, context)
+
+
+def find_all_root_cas() -> set:
+    """
+    find all root CAs in the parameter set
+    """
+    result = set()
+    paginator = ssm.get_paginator("get_parameters_by_path")
+    for response in paginator.paginate(
+        Recursive=True, Path="/certauth/", WithDecryption=True
+    ):
+        for parameter in response["Parameters"]:
+            ca_name = parameter["Name"].split("/")[2]
+            result.add(ca_name)
+    return result

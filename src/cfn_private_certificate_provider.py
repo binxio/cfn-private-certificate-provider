@@ -80,7 +80,7 @@ class PrivateCertificateProvider(ResourceProvider):
 
     @property
     def cache(self):
-        return  CertificateCache(ssm=ssm, ca_name=self.ca_name)
+        return CertificateCache(ssm=ssm, ca_name=self.ca_name)
 
     def create_or_update(self, refresh=False):
         if not self.cache.get("!!root_ca"):
@@ -88,7 +88,10 @@ class PrivateCertificateProvider(ResourceProvider):
             return
 
         ca = CertificateAuthority(
-            self.ca_name, ca_file_cache=self.cache, cert_cache=self.cache, overwrite=False
+            self.ca_name,
+            ca_file_cache=self.cache,
+            cert_cache=self.cache,
+            overwrite=False,
         )
 
         cert, pkey, entry = ca.load_cert(
@@ -99,18 +102,20 @@ class PrivateCertificateProvider(ResourceProvider):
             include_cache_key=True,
         )
 
-        public_key_pem = crypto.dump_publickey(FILETYPE_PEM, cert.get_pubkey())
+        public_cert_pem = crypto.dump_certificate(FILETYPE_PEM, cert)
         self.set_attribute("CAName", self.ca_name)
         self.set_attribute("Hostname", self.hostname)
-        self.set_attribute("Hash", hashlib.md5(public_key_pem).hexdigest())
-        self.set_attribute("PublicKeyPEM", public_key_pem.decode("ascii"))
+        self.set_attribute("Hash", hashlib.md5(public_cert_pem).hexdigest())
+        self.set_attribute("PublicCertPEM", public_cert_pem.decode("ascii"))
         self.physical_resource_id = self.cache.parameter_name(self.hostname)
 
     def create(self):
         self.create_or_update(refresh=False)
 
     def update(self):
-        if (self.ca_name != self.old_ca_name or self.hostname != self.old_hostname) and self.cache.get(self.hostname):
+        if (
+            self.ca_name != self.old_ca_name or self.hostname != self.old_hostname
+        ) and self.cache.get(self.hostname):
             self.fail(
                 f"certificate for host '{self.hostname}' in ca '{self.ca_name}' already exists."
             )

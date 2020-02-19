@@ -32,10 +32,7 @@ def test_create():
             new_hostname,
             physical_resource_id=response["PhysicalResourceId"],
         )
-        request["OldResourceProperties"] = {
-            "CAName": ca_name,
-            "Hostname": hostname,
-        }
+        request["OldResourceProperties"] = {"CAName": ca_name, "Hostname": hostname}
         update_response = handler(request, {})
         assert update_response["Status"] == "SUCCESS", update_response["Reason"]
         assert "PhysicalResourceId" in response
@@ -73,6 +70,7 @@ def test_create():
         handler(CertificateRequest("Delete", ca_name, new_hostname), {})
         handler(RootCertificateRequest("Delete", ca_name), {})
 
+
 def test_refresh_on_update():
     # create
     ca_name = "ca-%s" % uuid.uuid4()
@@ -83,7 +81,6 @@ def test_refresh_on_update():
     hash = response["Data"]["Hash"]
     ca_physical_resource_id = response.get("PhysicalResourceId")
 
-
     request = CertificateRequest("Create", ca_name, hostname)
     response = handler(request, {})
     assert response["Data"]["CAName"] == ca_name
@@ -92,20 +89,21 @@ def test_refresh_on_update():
     physical_resource_id = response.get("PhysicalResourceId")
     hash = response["Data"]["Hash"]
 
-    request = CertificateRequest("Update", ca_name, hostname, physical_resource_id=physical_resource_id)
+    request = CertificateRequest(
+        "Update", ca_name, hostname, physical_resource_id=physical_resource_id
+    )
     response = handler(request, {})
     assert response["Status"] == "SUCCESS", response["Reason"]
     assert response.get("PhysicalResourceId") == physical_resource_id
-    assert "PublicKeyPEM" in response["Data"]
+    assert "PublicCertPEM" in response["Data"]
     assert response["Data"]["Hash"] == hash
 
     request["ResourceProperties"]["RefreshOnUpdate"] = True
     response = handler(request, {})
     assert response["Status"] == "SUCCESS", response["Reason"]
     assert response.get("PhysicalResourceId") == physical_resource_id
-    assert "PublicKeyPEM" in response["Data"]
+    assert "PublicCertPEM" in response["Data"]
     assert response["Data"]["Hash"] != hash
-
 
     request["RequestType"] = "Delete"
     response = handler(request, {})
