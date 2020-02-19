@@ -23,7 +23,8 @@ After the deployment, the following parameters are created:
 The first parameter contains the private key and certificate of the root CA. The second parameter contains the
 public certificate.
 
-##  How do a create a Certificate Authority
+##  How do a issue a certificate?
+To issue a certificate, use a [Custom::PrivateCertificate](./PrivateCertificate.md) as follows:
 ```yaml
   Server01Certificate:
     Type: Custom::PrivateCertificate
