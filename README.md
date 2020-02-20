@@ -95,4 +95,4 @@ openssl pkcs12 -export \
 
 ## Acknowledgements
 Special thanks to the Python [certauth](https://pypi.org/project/certauth/) project by [Ilya Kreymer](email:ikreymer@gmail.com). The
-CustomCache callback interface made this project very trivial.
+CustomCache callback interface made this project very easy to implement.
