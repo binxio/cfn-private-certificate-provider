@@ -6,8 +6,21 @@ Parameters:
     Default: ''
   CFNCustomProviderZipFileName:
     Type: String
-    Default: lambdas/cfn-private-certificate-provider-0.3.1.3.0.2.0.zip
 Resources:
+  CFNCustomProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Private Certificate Authority ptoiviuder
+      Code:
+        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
+        S3Key: lambdas/cfn-private-certificate-provider-0.3.0.zip
+      FunctionName: cfn-private-certificate-provider
+      Handler: provider.handler
+      MemorySize: 128
+      Role: !GetAtt 'LambdaRole.Arn'
+      Timeout: 300
+      Runtime: python3.9
+
   LambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -36,16 +49,3 @@ Resources:
                   - logs:*
                 Resource: arn:aws:logs:*:*:*
                 Effect: Allow
-  CFNCustomProvider:
-    Type: AWS::Lambda::Function
-    Properties:
-      Description: Custom CloudFormation Provider implementation
-      Code:
-        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-        S3Key: !Ref 'CFNCustomProviderZipFileName'
-      FunctionName: cfn-private-certificate-provider
-      Handler: provider.handler
-      MemorySize: 128
-      Role: !GetAtt 'LambdaRole.Arn'
-      Timeout: 300
-      Runtime: python3.7
