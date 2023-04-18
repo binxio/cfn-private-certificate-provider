@@ -4,11 +4,24 @@ import boto3
 
 from provider import handler
 from cfn_private_root_certificate_provider import find_all_root_cas
+import pytest
+from cfn_resource_provider import ResourceProvider
 
 ssm = boto3.client("ssm")
 
+@pytest.fixture
+def setup():
+    send_response = ResourceProvider.send_response
 
-def test_crud():
+    def ignore_send_response(*args, **kwargs):
+        print("ignoring send response")
+        pass
+
+    ResourceProvider.send_response = ignore_send_response
+    yield ResourceProvider
+    ResourceProvider.send_response = send_response
+
+def test_crud(setup):
     # create
     ca_name = "ca-%s" % uuid.uuid4()
     try:
@@ -50,7 +63,7 @@ def test_crud():
         handler(RootCertificateRequest("Delete", ca_name), {})
 
 
-def test_rename():
+def test_rename(setup):
     # create
     ca_name = "ca-%s" % uuid.uuid4()
     new_ca_name = "new-ca-%s" % uuid.uuid4()
@@ -96,7 +109,7 @@ def test_rename():
             pass
 
 
-def test_refresh_on_update():
+def test_refresh_on_update(setup):
     # create
     ca_name = "ca-%s" % uuid.uuid4()
     request = RootCertificateRequest("Create", ca_name)
@@ -150,7 +163,7 @@ class RootCertificateRequest(dict):
         )
 
 
-def test_find_all_root_cas():
+def test_find_all_root_cas(setup):
     base_name = "ca-%s" % uuid.uuid4()
     ca_names = set([f"{base_name}-{x}" for x in range(0, 4)])
 

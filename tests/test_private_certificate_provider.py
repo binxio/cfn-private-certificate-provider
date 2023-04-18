@@ -1,13 +1,27 @@
 import uuid
 import boto3
+import pytest
 from provider import handler
+from cfn_resource_provider import ResourceProvider
 from test_private_root_certificate_provider import RootCertificateRequest
 
 
 ssm = boto3.client("ssm")
 
 
-def test_create():
+@pytest.fixture
+def setup():
+    send_response = ResourceProvider.send_response
+
+    def ignore_send_response(*args, **kwargs):
+        print("ignoring send response")
+        pass
+
+    ResourceProvider.send_response = ignore_send_response
+    yield ResourceProvider
+    ResourceProvider.send_response = send_response
+
+def test_create(setup):
     # create
     ca_name = "ca-%s" % uuid.uuid4()
     hostname = f"np17.{ca_name}"
@@ -71,7 +85,7 @@ def test_create():
         handler(RootCertificateRequest("Delete", ca_name), {})
 
 
-def test_refresh_on_update():
+def test_refresh_on_update(setup):
     # create
     ca_name = "ca-%s" % uuid.uuid4()
     hostname = "server.ca-%s" % uuid.uuid4()
