@@ -11,7 +11,7 @@ Resources:
       Description: 'manages private CA and certificates'
       Code:
         S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-        S3Key: 'lambdas/cfn-private-certificate-provider-0.4.0.3.0.zip'
+        S3Key: 'lambdas/cfn-private-certificate-provider-0.4.1.4.0.3.0.zip'
       FunctionName: 'cfn-private-certificate-provider'
       Handler: 'cfn_private_certificate_provider.handler'
       MemorySize: 128
