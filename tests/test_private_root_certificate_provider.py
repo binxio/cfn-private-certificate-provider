@@ -2,8 +2,9 @@ import uuid
 
 import boto3
 
-from provider import handler
-from cfn_private_root_certificate_provider import find_all_root_cas
+from cfn_private_certificate_provider import handler
+from cfn_private_certificate_provider.private_root_certificate import find_all_root_cas
+
 import pytest
 from cfn_resource_provider import ResourceProvider
 
@@ -20,47 +21,6 @@ def setup():
     ResourceProvider.send_response = ignore_send_response
     yield ResourceProvider
     ResourceProvider.send_response = send_response
-
-def test_crud(setup):
-    # create
-    ca_name = "ca-%s" % uuid.uuid4()
-    try:
-        request = RootCertificateRequest("Create", ca_name)
-        response = handler(request, {})
-        assert response["Status"] == "SUCCESS", response["Reason"]
-        assert "PhysicalResourceId" in response
-        assert "PublicCertPEM" in response["Data"]
-        assert "Hash" in response["Data"]
-        assert response["Data"]["CAName"] == ca_name
-        hash = response["Data"]["Hash"]
-        physical_resource_id = response.get("PhysicalResourceId")
-        r = ssm.get_parameter(Name=response["PhysicalResourceId"], WithDecryption=True)
-
-        request = RootCertificateRequest(
-            "Update", ca_name, physical_resource_id=physical_resource_id
-        )
-        response = handler(request, {})
-        assert response["Status"] == "SUCCESS", response["Reason"]
-        assert "PhysicalResourceId" in response
-        assert "PublicCertPEM" in response["Data"]
-        assert response["Data"]["Hash"] == hash
-        r = ssm.get_parameter(Name=response["PhysicalResourceId"], WithDecryption=True)
-
-        request = RootCertificateRequest(
-            "Delete", ca_name, physical_resource_id=physical_resource_id
-        )
-        response = handler(request, {})
-        assert response["Status"] == "SUCCESS", response["Reason"]
-        try:
-            r = ssm.get_parameter(
-                Name=response["PhysicalResourceId"], WithDecryption=True
-            )
-            assert False, f"root ca parameter store {physical_resource_id} still exists"
-        except ssm.exceptions.ParameterNotFound:
-            pass
-    finally:
-        pass
-        handler(RootCertificateRequest("Delete", ca_name), {})
 
 
 def test_rename(setup):

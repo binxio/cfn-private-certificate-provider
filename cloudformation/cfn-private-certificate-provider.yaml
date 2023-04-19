@@ -1,25 +1,23 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Private Certificate Provider
+Description: 'manages private CA and certificates '
 Parameters:
   S3BucketPrefix:
     Type: String
-    Default: ''
-  CFNCustomProviderZipFileName:
-    Type: String
+    Default: 'binxio-public'
 Resources:
   CFNCustomProvider:
     Type: AWS::Lambda::Function
     Properties:
-      Description: Private Certificate Authority ptoiviuder
+      Description: 'manages private CA and certificates'
       Code:
         S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-        S3Key: lambdas/cfn-private-certificate-provider-0.3.0.zip
-      FunctionName: cfn-private-certificate-provider
-      Handler: provider.handler
+        S3Key: 'lambdas/cfn-private-certificate-provider-0.3.1-2-gba5a71e-dirty.zip'
+      FunctionName: 'cfn-private-certificate-provider'
+      Handler: 'cfn_private_certificate_provider.handler'
       MemorySize: 128
+      Timeout: 900
       Role: !GetAtt 'LambdaRole.Arn'
-      Timeout: 300
-      Runtime: python3.9
+      Runtime: 'python3.9'
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -49,3 +47,14 @@ Resources:
                   - logs:*
                 Resource: arn:aws:logs:*:*:*
                 Effect: Allow
+              - Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+                Resource: !GetAtt 'CFNCustomProviderLogGroup.Arn'
+                Effect: Allow
+
+  CFNCustomProviderLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: '/aws/lambda/cfn-private-certificate-provider'
+      RetentionInDays: 7

@@ -3,7 +3,7 @@ from cfn_resource_provider import ResourceProvider
 from certauth.certauth import CertificateAuthority
 from OpenSSL import crypto
 from OpenSSL.SSL import FILETYPE_PEM
-from ssm_cache import CertificateCache
+from cfn_private_certificate_provider.ssm_cache import CertificateCache
 import hashlib
 
 request_schema = {
@@ -89,6 +89,11 @@ class PrivateRootCertificateProvider(ResourceProvider):
         self.create_or_update(overwrite=self.refresh_on_update)
 
     def delete(self):
+
+        if not self.physical_resource_id.startswith("/certauth/"):
+            self.success('ignore delete of resource not created')
+            return
+
         cache = CertificateCache(ssm=ssm, ca_name=self.ca_name)
         cache.delete("!!root_ca")
 
@@ -112,7 +117,7 @@ def find_all_root_cas() -> set:
     result = set()
     paginator = ssm.get_paginator("get_parameters_by_path")
     for response in paginator.paginate(
-        Recursive=True, Path="/certauth/", WithDecryption=True
+            Recursive=True, Path="/certauth/", WithDecryption=True
     ):
         for parameter in response["Parameters"]:
             ca_name = parameter["Name"].split("/")[2]
