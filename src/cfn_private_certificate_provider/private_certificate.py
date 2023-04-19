@@ -4,7 +4,7 @@ from OpenSSL import crypto
 from OpenSSL.SSL import FILETYPE_PEM
 from cfn_resource_provider import ResourceProvider
 from certauth.certauth import CertificateAuthority
-from ssm_cache import CertificateCache
+from cfn_private_certificate_provider.ssm_cache import CertificateCache
 
 request_schema = {
     "type": "object",
@@ -114,7 +114,7 @@ class PrivateCertificateProvider(ResourceProvider):
 
     def update(self):
         if (
-            self.ca_name != self.old_ca_name or self.hostname != self.old_hostname
+                self.ca_name != self.old_ca_name or self.hostname != self.old_hostname
         ) and self.cache.get(self.hostname):
             self.fail(
                 f"certificate for host '{self.hostname}' in ca '{self.ca_name}' already exists."
@@ -124,6 +124,10 @@ class PrivateCertificateProvider(ResourceProvider):
         self.create_or_update(refresh=self.refresh_on_update)
 
     def delete(self):
+        if not self.physical_resource_id.startswith("/certauth/"):
+            self.success('ignore delete of resource not created')
+            return
+
         cache = CertificateCache(ssm=ssm, ca_name=self.ca_name)
         cache.delete(self.hostname)
 

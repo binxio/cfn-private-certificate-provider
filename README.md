@@ -5,7 +5,7 @@ in the parameter store.
 AWS provides a very fancy Private Certificate Authority, but it is priced at 400 usd per month. For a small number of certificates
 this is quite a hefty price. So this is a simple and cheap alternative.
 
-##  How do a create a Certificate Authority
+##  How do I create a Certificate Authority
 It is quite easy: you specify a CloudFormation resource of the [Custom::PrivateRootCertificate](docs/PrivateRootCertificate.md), as follows:
 
 ```yaml
@@ -56,7 +56,7 @@ To create a simple CA, type;
 
 ```sh
 aws cloudformation deploy --stack-name cfn-secret-provider-demo \
-       --template-file ./cloudformation/demo-stack.yaml
+       --template-file ./cloudformation/demo.yaml
 ```
 to validate the result, type:
 
