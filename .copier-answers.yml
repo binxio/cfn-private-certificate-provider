@@ -1,0 +1,17 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 0.1.0
+_src_path: https://github.com/binxio/cloudformation-custom-provider-template
+author: Mark van Holsteijn
+author_email: mark.vanholsteijn@xebia.com
+aws_profile: integration-test
+aws_region: eu-central-1
+description: 'manages private CA and certificates '
+module_name: cfn_private_certificate_provider
+project_name: cfn-private-certificate-provider
+python_version: '3.9'
+resource_file_name: private_root_certificate
+resource_name: PrivateRootCertificate
+resource_type_name: Custom::PrivateRootCertificate
+s3_bucket_prefix: binxio-public
+s3_object_acl: public-read
+url: https://github.com/binxio/cfn-private-certificate-provider
