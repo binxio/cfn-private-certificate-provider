@@ -1,23 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'manages private CA and certificates '
-Parameters:
-  S3BucketPrefix:
-    Type: String
-    Default: 'binxio-public'
+Description: 'manages private CA and certificates'
 Resources:
   CFNCustomProvider:
     Type: AWS::Lambda::Function
     Properties:
       Description: 'manages private CA and certificates'
+      PackageType: Image
       Code:
-        S3Bucket: !Sub '${S3BucketPrefix}-${AWS::Region}'
-        S3Key: 'lambdas/cfn-private-certificate-provider-0.4.1.4.0.3.0.zip'
+        ImageUri: 463637877380.dkr.ecr.eu-central-1.amazonaws.com/xebia/cfn-private-certificate-provider:0.4.1-56e8a5c-dirty
       FunctionName: 'cfn-private-certificate-provider'
-      Handler: 'cfn_private_certificate_provider.handler'
       MemorySize: 128
       Timeout: 900
       Role: !GetAtt 'LambdaRole.Arn'
-      Runtime: 'python3.9'
 
   LambdaRole:
     Type: AWS::IAM::Role
